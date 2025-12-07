@@ -31,8 +31,9 @@ if(ENABLE_IPO)
 endif()
 
 if(ENABLE_ASAN AND CMAKE_CXX_COMPILER_ID MATCHES ".*Clang|GNU")
+  # Add ASan early on the link line so its runtime is the first DT_NEEDED entry.
   add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-  add_link_options(-fsanitize=address)
+  add_link_options(BEFORE -fsanitize=address)
 endif()
 
 if(ENABLE_CLANG_TIDY)
