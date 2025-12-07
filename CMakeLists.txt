@@ -15,13 +15,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Build Type Configuration
 # =============================================================================
 # Define available build types
-set(CMAKE_BUILD_TYPES Debug Development Release)
+set(CMAKE_BUILD_TYPES Debug RelWithDebInfo Release)
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_BUILD_TYPES})
 
-# Set default build type to Development if not specified
+# Set default build type to RelWithDebInfo if not specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE Development CACHE STRING "Build type" FORCE)
-  message(STATUS "Build type not specified, defaulting to Development")
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Build type" FORCE)
+  message(STATUS "Build type not specified, defaulting to RelWithDebInfo")
 endif()
 
 # Configure optimization flags for each build type
@@ -29,107 +29,27 @@ endif()
 if(MSVC)
   # MSVC optimization flags
   set(CMAKE_CXX_FLAGS_DEBUG "/Od /Zi /MDd" CACHE STRING "Debug compiler flags" FORCE)
-  set(CMAKE_CXX_FLAGS_DEVELOPMENT "/Od /Zi /MD" CACHE STRING "Development compiler flags" FORCE)
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/O2 /Zi /MD" CACHE STRING "RelWithDebInfo compiler flags" FORCE)
   set(CMAKE_CXX_FLAGS_RELEASE "/O2 /DNDEBUG /MD" CACHE STRING "Release compiler flags" FORCE)
 else()
   # GCC/Clang optimization flags
   set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE STRING "Debug compiler flags" FORCE)
-  set(CMAKE_CXX_FLAGS_DEVELOPMENT "-O0 -g" CACHE STRING "Development compiler flags" FORCE)
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g" CACHE STRING "RelWithDebInfo compiler flags" FORCE)
   set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG" CACHE STRING "Release compiler flags" FORCE)
 endif()
-
-# Configure build type specific settings
-if(EMSCRIPTEN)
-  # Emscripten: disable all analysis tools
-  set(WARNINGS_AS_ERRORS_DEFAULT OFF)
-  set(ENABLE_IPO_DEFAULT OFF)
-  set(ENABLE_ASAN_DEFAULT OFF)
-  set(ENABLE_LSAN_DEFAULT OFF)
-  set(ENABLE_TSAN_DEFAULT OFF)
-  set(ENABLE_UBSAN_DEFAULT OFF)
-  set(ENABLE_MSAN_DEFAULT OFF)
-  set(ENABLE_CLANG_TIDY_DEFAULT OFF)
-  set(ENABLE_CPPCHECK_DEFAULT OFF)
-  set(ENABLE_IWYU_DEFAULT OFF)
-  
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # Debug: All sanitizers, no optimization, IWYU enabled
-  set(WARNINGS_AS_ERRORS_DEFAULT ON)
-  set(ENABLE_IPO_DEFAULT OFF)
-  set(ENABLE_ASAN_DEFAULT ON)
-  set(ENABLE_LSAN_DEFAULT ON)
-  set(ENABLE_TSAN_DEFAULT ON)
-  set(ENABLE_UBSAN_DEFAULT ON)
-  set(ENABLE_MSAN_DEFAULT ON)
-  set(ENABLE_CLANG_TIDY_DEFAULT ON)
-  set(ENABLE_CPPCHECK_DEFAULT ON)
-  set(ENABLE_IWYU_DEFAULT ON)
-  message(STATUS "Build type: Debug - All sanitizers enabled, no optimization, IWYU enabled")
-  
-elseif(CMAKE_BUILD_TYPE STREQUAL "Development")
-  # Development: No sanitizers, warnings as errors, clang-tidy and cppcheck, no optimization
-  set(WARNINGS_AS_ERRORS_DEFAULT ON)
-  set(ENABLE_IPO_DEFAULT OFF)
-  set(ENABLE_ASAN_DEFAULT OFF)
-  set(ENABLE_LSAN_DEFAULT OFF)
-  set(ENABLE_TSAN_DEFAULT OFF)
-  set(ENABLE_UBSAN_DEFAULT OFF)
-  set(ENABLE_MSAN_DEFAULT OFF)
-  set(ENABLE_CLANG_TIDY_DEFAULT ON)
-  set(ENABLE_CPPCHECK_DEFAULT ON)
-  set(ENABLE_IWYU_DEFAULT OFF)
-  message(STATUS "Build type: Development - Static analyzers enabled, no sanitizers, no optimization")
-  
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-  # Release: Full optimization, no sanitizers, static analyzers enabled
-  set(WARNINGS_AS_ERRORS_DEFAULT ON)
-  set(ENABLE_IPO_DEFAULT ON)
-  set(ENABLE_ASAN_DEFAULT OFF)
-  set(ENABLE_LSAN_DEFAULT OFF)
-  set(ENABLE_TSAN_DEFAULT OFF)
-  set(ENABLE_UBSAN_DEFAULT OFF)
-  set(ENABLE_MSAN_DEFAULT OFF)
-  set(ENABLE_CLANG_TIDY_DEFAULT ON)
-  set(ENABLE_CPPCHECK_DEFAULT ON)
-  set(ENABLE_IWYU_DEFAULT OFF)
-  message(STATUS "Build type: Release - Full optimization, static analyzers enabled, no sanitizers")
-  
-else()
-  # Default to Development settings if build type is not recognized
-  set(WARNINGS_AS_ERRORS_DEFAULT ON)
-  set(ENABLE_IPO_DEFAULT OFF)
-  set(ENABLE_ASAN_DEFAULT OFF)
-  set(ENABLE_LSAN_DEFAULT OFF)
-  set(ENABLE_TSAN_DEFAULT OFF)
-  set(ENABLE_UBSAN_DEFAULT OFF)
-  set(ENABLE_MSAN_DEFAULT OFF)
-  set(ENABLE_CLANG_TIDY_DEFAULT ON)
-  set(ENABLE_CPPCHECK_DEFAULT ON)
-  set(ENABLE_IWYU_DEFAULT OFF)
-  message(STATUS "Build type: ${CMAKE_BUILD_TYPE} - Using Development defaults")
-endif()
-
-# =============================================================================
-# Options
-# =============================================================================
-option(WARNINGS_AS_ERRORS "Treat warnings as errors" ${WARNINGS_AS_ERRORS_DEFAULT})
-option(ENABLE_IPO "Enable interprocedural optimization" ${ENABLE_IPO_DEFAULT})
-option(ENABLE_ASAN "Enable AddressSanitizer" ${ENABLE_ASAN_DEFAULT})
-option(ENABLE_LSAN "Enable LeakSanitizer" ${ENABLE_LSAN_DEFAULT})
-option(ENABLE_TSAN "Enable ThreadSanitizer" ${ENABLE_TSAN_DEFAULT})
-option(ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" ${ENABLE_UBSAN_DEFAULT})
-option(ENABLE_MSAN "Enable MemorySanitizer (Clang only)" ${ENABLE_MSAN_DEFAULT})
-option(ENABLE_CLANG_TIDY "Enable clang-tidy" ${ENABLE_CLANG_TIDY_DEFAULT})
-option(ENABLE_CPPCHECK "Enable cppcheck" ${ENABLE_CPPCHECK_DEFAULT})
-option(ENABLE_IWYU "Enable include-what-you-use" ${ENABLE_IWYU_DEFAULT})
-option(WASM_SINGLE_FILE "Embed WASM in JS (Emscripten only)" OFF)
 
 # =============================================================================
 # CMake modules
 # =============================================================================
+# Configure build type defaults and define CMake options
+include(cmake/Options.cmake)
+# Configure compiler warning flags and warnings-as-errors
 include(cmake/CompilerWarnings.cmake)
+# Configure sanitizer flags (ASan, LSan, TSan, UBSan, MSan)
 include(cmake/Sanitizers.cmake)
+# Configure static analysis tools (clang-tidy, cppcheck, IWYU)
 include(cmake/StaticAnalyzers.cmake)
+# Configure interprocedural optimization (LTO)
 include(cmake/InterproceduralOptimization.cmake)
 
 # =============================================================================
@@ -172,10 +92,12 @@ endif()
 # =============================================================================
 # Tests
 # =============================================================================
-enable_testing()
-include(CTest)
-if(BUILD_TESTING AND NOT EMSCRIPTEN)
-  add_subdirectory(test)
+if(BUILD_TESTING)
+  enable_testing()
+  include(CTest)
+  if(NOT EMSCRIPTEN)
+    add_subdirectory(test)
+  endif()
 endif()
 
 # =============================================================================
