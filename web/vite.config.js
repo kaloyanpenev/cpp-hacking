@@ -1,5 +1,11 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { readFileSync } from 'fs';
+
+// Read project config from central source
+const projectConfig = JSON.parse(
+    readFileSync(resolve(__dirname, '../project.json'), 'utf-8')
+);
 
 export default defineConfig({
     root: '.',
@@ -21,8 +27,12 @@ export default defineConfig({
         port: 4173,
     },
     optimizeDeps: {
-        exclude: ['order_engine.js'],
+        exclude: [`${projectConfig.name}.js`],
     },
     assetsInclude: ['**/*.wasm'],
+    define: {
+        __PROJECT_NAME__: JSON.stringify(projectConfig.name),
+        __PROJECT_DISPLAY_NAME__: JSON.stringify(projectConfig.display_name),
+    },
 });
 

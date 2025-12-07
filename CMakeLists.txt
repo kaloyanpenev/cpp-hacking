@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(order_engine LANGUAGES CXX VERSION 0.1.0)
+# Read project name from central config (project.json)
+file(READ "${CMAKE_SOURCE_DIR}/project.json" PROJECT_JSON)
+string(JSON PROJECT_NAME_VAR GET ${PROJECT_JSON} "name")
+
+project(${PROJECT_NAME_VAR} LANGUAGES CXX VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -140,27 +144,37 @@ if(ENABLE_IWYU)
   endif()
 endif()
 
-add_executable(order_engine src/main.cpp)
-target_link_libraries(order_engine PRIVATE project_warnings)
+add_executable(${PROJECT_NAME} src/main.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE project_warnings)
 
 # Emscripten-specific configuration
 if(EMSCRIPTEN)
-  set_target_properties(order_engine PROPERTIES
+  # Convert project name to PascalCase for JS export (e.g., fuzz_buzz -> FuzzBuzz)
+  string(REPLACE "_" ";" NAME_PARTS "${PROJECT_NAME}")
+  set(JS_EXPORT_NAME "")
+  foreach(PART ${NAME_PARTS})
+    string(SUBSTRING ${PART} 0 1 FIRST_CHAR)
+    string(TOUPPER ${FIRST_CHAR} FIRST_CHAR)
+    string(SUBSTRING ${PART} 1 -1 REST)
+    string(APPEND JS_EXPORT_NAME "${FIRST_CHAR}${REST}")
+  endforeach()
+
+  set_target_properties(${PROJECT_NAME} PROPERTIES
     SUFFIX ".js"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/web"
   )
   
   # Emscripten compile options
-  target_compile_options(order_engine PRIVATE
+  target_compile_options(${PROJECT_NAME} PRIVATE
     -sNO_DISABLE_EXCEPTION_CATCHING
   )
   
   # Emscripten link options
-  target_link_options(order_engine PRIVATE
+  target_link_options(${PROJECT_NAME} PRIVATE
     -sWASM=1
     -sEXPORT_ES6=1
     -sMODULARIZE=1
-    -sEXPORT_NAME=OrderEngine
+    -sEXPORT_NAME=${JS_EXPORT_NAME}
     -sENVIRONMENT=web,worker,node
     -sALLOW_MEMORY_GROWTH=1
     -sDISABLE_EXCEPTION_CATCHING=1

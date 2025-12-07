@@ -48,9 +48,19 @@ jobs:
 
       - name: Copy WASM files to web directory
         run: |
-          cp build-wasm/web/order_engine.js web/
-          # Copy .wasm file if it exists (only when WASM_SINGLE_FILE=OFF)
-          [ -f build-wasm/web/order_engine.wasm ] && cp build-wasm/web/order_engine.wasm web/ || true
+          # Copy generated .js and .wasm files (names derived from project.json by CMake)
+          cp build-wasm/web/*.js web/
+          cp build-wasm/web/*.wasm web/ 2>/dev/null || true
+
+      - name: Sync package name from project.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('web/package.json'));
+            const cfg = JSON.parse(fs.readFileSync('project.json'));
+            pkg.name = cfg.name.replace(/_/g, '-') + '-web';
+            fs.writeFileSync('web/package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
 
       - name: Install dependencies
         working-directory: web

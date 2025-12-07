@@ -2,6 +2,6 @@
 
 int main()
 {
-  std::cout << "order-engine starter\n";
+  std::cout << "Hello, world!\n";
   return 0;
 }
