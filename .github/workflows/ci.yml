@@ -96,6 +96,7 @@ jobs:
           -DENABLE_UBSAN=ON
           -DENABLE_CLANG_TIDY=OFF
           -DENABLE_CPPCHECK=OFF
+          -DBUILD_TESTING=OFF
 
       - name: Build
         run: cmake --build build
@@ -130,6 +131,7 @@ jobs:
           -DENABLE_UBSAN=OFF
           -DENABLE_CLANG_TIDY=OFF
           -DENABLE_CPPCHECK=OFF
+          -DBUILD_TESTING=OFF
 
       - name: Build
         run: cmake --build build
@@ -164,6 +166,7 @@ jobs:
           -DENABLE_LSAN=ON
           -DENABLE_CLANG_TIDY=OFF
           -DENABLE_CPPCHECK=OFF
+          -DBUILD_TESTING=OFF
 
       - name: Build
         run: cmake --build build
@@ -198,6 +201,7 @@ jobs:
           -DENABLE_UBSAN=OFF
           -DENABLE_CLANG_TIDY=OFF
           -DENABLE_CPPCHECK=OFF
+          -DBUILD_TESTING=OFF
 
       - name: Build
         run: cmake --build build
