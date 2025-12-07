@@ -1,9 +1,10 @@
-#include <cassert>
+#include <gtest/gtest.h>
 
 int add(int lhs, int rhs) { return lhs + rhs; }
 
-int main()
+TEST(Addition, ComputesSumOfTwoInts)
 {
-  assert(add(2, 3) == 5);
-  return 0;
+  EXPECT_EQ(add(2, 3), 5);
+  EXPECT_EQ(add(-2, 3), 1);
+  EXPECT_EQ(add(0, 0), 0);
 }
