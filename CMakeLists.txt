@@ -14,18 +14,20 @@ option(ENABLE_CLANG_TIDY "Run clang-tidy during builds" ON)
 option(ENABLE_CPPCHECK "Run cppcheck during builds" ON)
 option(ENABLE_IWYU "Run include-what-you-use during builds" OFF)
 
-# Compiler warnings
-set(WARNINGS -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align
+# Compiler warnings (as interface library to apply only to project targets)
+add_library(project_warnings INTERFACE)
+target_compile_options(project_warnings INTERFACE
+    -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align
     -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion
     -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wimplicit-fallthrough)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  list(APPEND WARNINGS -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches
+  target_compile_options(project_warnings INTERFACE
+      -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches
       -Wlogical-op -Wuseless-cast -Wsuggest-override)
 endif()
 if(ENABLE_WARNINGS_AS_ERRORS)
-  list(APPEND WARNINGS -Werror)
+  target_compile_options(project_warnings INTERFACE -Werror)
 endif()
-add_compile_options(${WARNINGS})
 
 # IPO/LTO
 if(ENABLE_IPO)
@@ -88,6 +90,7 @@ if(ENABLE_IWYU)
 endif()
 
 add_executable(order_engine src/main.cpp)
+target_link_libraries(order_engine PRIVATE project_warnings)
 
 include(CTest)
 if(BUILD_TESTING)
