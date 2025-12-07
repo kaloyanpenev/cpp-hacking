@@ -48,7 +48,10 @@ endif()
 if(ENABLE_CLANG_TIDY)
   find_program(CLANGTIDY clang-tidy)
   if(CLANGTIDY)
-    set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY} -extra-arg=-std=c++${CMAKE_CXX_STANDARD} -p)
+    set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY}
+        -extra-arg=-std=c++${CMAKE_CXX_STANDARD}
+        -extra-arg=-Wno-unknown-warning-option
+        -p)
     if(ENABLE_WARNINGS_AS_ERRORS)
       list(APPEND CMAKE_CXX_CLANG_TIDY -warnings-as-errors=*)
     endif()
