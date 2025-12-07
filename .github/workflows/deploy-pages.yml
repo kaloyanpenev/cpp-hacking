@@ -49,7 +49,8 @@ jobs:
       - name: Copy WASM files to web directory
         run: |
           cp build-wasm/web/order_engine.js web/
-          cp build-wasm/web/order_engine.wasm web/
+          # Copy .wasm file if it exists (only when WASM_SINGLE_FILE=OFF)
+          [ -f build-wasm/web/order_engine.wasm ] && cp build-wasm/web/order_engine.wasm web/ || true
 
       - name: Install dependencies
         working-directory: web
