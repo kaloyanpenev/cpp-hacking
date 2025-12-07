@@ -7,8 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(WARNING_MESSAGE WARNING)
-
 option(ENABLE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 option(ENABLE_IPO "Enable IPO/LTO when supported" ON)
 option(ENABLE_ASAN "Enable address sanitizer" ON)
@@ -16,40 +14,77 @@ option(ENABLE_CLANG_TIDY "Run clang-tidy during builds" ON)
 option(ENABLE_CPPCHECK "Run cppcheck during builds" ON)
 option(ENABLE_IWYU "Run include-what-you-use during builds" OFF)
 
-include(cmake/CompilerWarnings.cmake)
-include(cmake/InterproceduralOptimization.cmake)
-include(cmake/StaticAnalyzers.cmake)
+# Compiler warnings
+set(WARNINGS -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align
+    -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion
+    -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wimplicit-fallthrough)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  list(APPEND WARNINGS -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches
+      -Wlogical-op -Wuseless-cast -Wsuggest-override)
+endif()
+if(ENABLE_WARNINGS_AS_ERRORS)
+  list(APPEND WARNINGS -Werror)
+endif()
+add_compile_options(${WARNINGS})
 
-add_library(order_engine_warnings INTERFACE)
-myproject_set_project_warnings(
-  order_engine_warnings
-  ${ENABLE_WARNINGS_AS_ERRORS}
-  "" "" "" "")
-
+# IPO/LTO
 if(ENABLE_IPO)
-  myproject_enable_ipo()
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT ipo_supported OUTPUT ipo_output)
+  if(ipo_supported)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  else()
+    message(SEND_ERROR "IPO is not supported: ${ipo_output}")
+  endif()
 endif()
 
+# Address sanitizer
 if(ENABLE_ASAN AND CMAKE_CXX_COMPILER_ID MATCHES ".*Clang|GNU")
-  # Add ASan early on the link line so its runtime is the first DT_NEEDED entry.
   add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-  add_link_options(BEFORE -fsanitize=address)
+  add_link_options(-fsanitize=address)
 endif()
 
+# Clang-tidy
 if(ENABLE_CLANG_TIDY)
-  myproject_enable_clang_tidy(order_engine_warnings ${ENABLE_WARNINGS_AS_ERRORS})
+  find_program(CLANGTIDY clang-tidy)
+  if(CLANGTIDY)
+    set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY} -extra-arg=-std=c++${CMAKE_CXX_STANDARD} -p)
+    if(ENABLE_WARNINGS_AS_ERRORS)
+      list(APPEND CMAKE_CXX_CLANG_TIDY -warnings-as-errors=*)
+    endif()
+  else()
+    message(WARNING "clang-tidy requested but executable not found")
+  endif()
 endif()
 
+# Cppcheck
 if(ENABLE_CPPCHECK)
-  myproject_enable_cppcheck(${ENABLE_WARNINGS_AS_ERRORS} "")
+  find_program(CPPCHECK cppcheck)
+  if(CPPCHECK)
+    set(CMAKE_CXX_CPPCHECK ${CPPCHECK} --template=gcc
+        --enable=style,performance,warning,portability --inline-suppr --inconclusive
+        --suppress=cppcheckError --suppress=internalAstError --suppress=unmatchedSuppression
+        --suppress=passedByValue --suppress=syntaxError --suppress=preprocessorErrorDirective
+        --suppress=knownConditionTrueFalse --std=c++${CMAKE_CXX_STANDARD})
+    if(ENABLE_WARNINGS_AS_ERRORS)
+      list(APPEND CMAKE_CXX_CPPCHECK --error-exitcode=2)
+    endif()
+  else()
+    message(WARNING "cppcheck requested but executable not found")
+  endif()
 endif()
 
+# Include-what-you-use
 if(ENABLE_IWYU)
-  myproject_enable_include_what_you_use()
+  find_program(IWYU include-what-you-use)
+  if(IWYU)
+    set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE ${IWYU})
+  else()
+    message(WARNING "include-what-you-use requested but executable not found")
+  endif()
 endif()
 
 add_executable(order_engine src/main.cpp)
-target_link_libraries(order_engine PRIVATE order_engine_warnings)
 
 include(CTest)
 if(BUILD_TESTING)
