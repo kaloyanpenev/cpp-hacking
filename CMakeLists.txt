@@ -142,7 +142,7 @@ target_link_libraries(order_engine PRIVATE project_warnings)
 if(EMSCRIPTEN)
 
   unset(EXTRA_FLAGS)
-  if (GGWEB_WASM_SINGLE_FILE)
+  if (WASM_SINGLE_FILE)
     set(EXTRA_FLAGS "-s SINGLE_FILE=1")
   endif()
   set_target_properties(order_engine PROPERTIES
