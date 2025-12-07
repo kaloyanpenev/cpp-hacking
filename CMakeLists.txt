@@ -1,121 +1,56 @@
 cmake_minimum_required(VERSION 3.21)
 
-# This template attempts to be "fetch_content"-able
-# so that it works well with tools like CPM or other
-# manual dependency management
+project(order_engine LANGUAGES CXX VERSION 0.1.0)
 
-# Only set the cxx_standard if it is not set by someone else
-if (NOT DEFINED CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 23)
-endif()
-
-# strongly encouraged to enable this globally to avoid conflicts between
-# -Wpedantic being enabled and -std=c++20 and -std=gnu++20 for example
-# when compiling with PCH enabled
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Set the project name and language
-project(
-  myproject
-  VERSION 0.0.1
-  DESCRIPTION ""
-  HOMEPAGE_URL "%%myurl%%"
-  LANGUAGES CXX C)
+set(WARNING_MESSAGE WARNING)
 
-include(cmake/PreventInSourceBuilds.cmake)
-include(ProjectOptions.cmake)
+option(ENABLE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
+option(ENABLE_IPO "Enable IPO/LTO when supported" ON)
+option(ENABLE_ASAN "Enable address sanitizer" ON)
+option(ENABLE_CLANG_TIDY "Run clang-tidy during builds" ON)
+option(ENABLE_CPPCHECK "Run cppcheck during builds" ON)
+option(ENABLE_IWYU "Run include-what-you-use during builds" OFF)
 
+include(cmake/CompilerWarnings.cmake)
+include(cmake/InterproceduralOptimization.cmake)
+include(cmake/StaticAnalyzers.cmake)
 
-myproject_setup_options()
+add_library(order_engine_warnings INTERFACE)
+myproject_set_project_warnings(
+  order_engine_warnings
+  ${ENABLE_WARNINGS_AS_ERRORS}
+  "" "" "" "")
 
-myproject_global_options()
-include(Dependencies.cmake)
-myproject_setup_dependencies()
-
-myproject_local_options()
-
-# don't know if this should be set globally from here or not...
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-
-set(GIT_SHA
-    "Unknown"
-    CACHE STRING "SHA this build was generated from")
-string(
-  SUBSTRING "${GIT_SHA}"
-            0
-            8
-            GIT_SHORT_SHA)
-
-target_compile_features(myproject_options INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
-
-add_library(myproject::myproject_options ALIAS myproject_options)
-add_library(myproject::myproject_warnings ALIAS myproject_warnings)
-
-#add_library(myproject::myproject_options INTERFACE IMPORTED)
-#add_library(myproject::myproject_warnings INTERFACE IMPORTED)
-
-# configure files based on CMake configuration options
-add_subdirectory(configured_files)
-
-# Adding the src:
-add_subdirectory(src)
-
-# Don't even look at tests if we're not top level
-if(NOT PROJECT_IS_TOP_LEVEL)
-  return()
+if(ENABLE_IPO)
+  myproject_enable_ipo()
 endif()
 
-# Adding the tests:
-include(CTest)
+if(ENABLE_ASAN AND CMAKE_CXX_COMPILER_ID MATCHES ".*Clang|GNU")
+  add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address)
+endif()
 
+add_executable(order_engine src/main.cpp)
+target_link_libraries(order_engine PRIVATE order_engine_warnings)
+
+if(ENABLE_CLANG_TIDY)
+  myproject_enable_clang_tidy(order_engine_warnings ${ENABLE_WARNINGS_AS_ERRORS})
+endif()
+
+if(ENABLE_CPPCHECK)
+  myproject_enable_cppcheck(${ENABLE_WARNINGS_AS_ERRORS} "")
+endif()
+
+if(ENABLE_IWYU)
+  myproject_enable_include_what_you_use()
+endif()
+
+include(CTest)
 if(BUILD_TESTING)
-  message(AUTHOR_WARNING "Building Tests. Be sure to check out test/constexpr_tests.cpp for constexpr testing")
   add_subdirectory(test)
 endif()
-
-
-if(myproject_BUILD_FUZZ_TESTS)
-  message(AUTHOR_WARNING "Building Fuzz Tests, using fuzzing sanitizer https://www.llvm.org/docs/LibFuzzer.html")
-  if (NOT myproject_ENABLE_SANITIZER_ADDRESS AND NOT myproject_ENABLE_SANITIZER_THREAD)
-    message(WARNING "You need asan or tsan enabled for meaningful fuzz testing")
-  endif()
-  add_subdirectory(fuzz_test)
-
-endif()
-
-# If MSVC is being used, and ASAN is enabled, we need to set the debugger environment
-# so that it behaves well with MSVC's debugger, and we can run the target from visual studio
-if(MSVC)
-  get_all_installable_targets(all_targets)
-  message("all_targets=${all_targets}")
-  set_target_properties(${all_targets} PROPERTIES VS_DEBUGGER_ENVIRONMENT "PATH=$(VC_ExecutablePath_x64);%PATH%")
-endif()
-
-# set the startup project for the "play" button in MSVC
-set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT intro)
-
-if(CMAKE_SKIP_INSTALL_RULES)
-  return()
-endif()
-
-include(cmake/PackageProject.cmake)
-
-# Add other targets that you want installed here, by default we just package the one executable
-# we know we want to ship
-myproject_package_project(
-  TARGETS
-  intro
-  myproject_options
-  myproject_warnings
-  # FIXME: this does not work! CK
-  # PRIVATE_DEPENDENCIES_CONFIGURED project_options project_warnings
-)
-
-# Experience shows that explicit package naming can help make it easier to sort
-# out potential ABI related issues before they start, while helping you
-# track a build to a specific GIT SHA
-set(CPACK_PACKAGE_FILE_NAME
-    "${CMAKE_PROJECT_NAME}-${CMAKE_PROJECT_VERSION}-${GIT_SHORT_SHA}-${CMAKE_SYSTEM_NAME}-${CMAKE_BUILD_TYPE}-${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}"
-)
-
-include(CPack)
