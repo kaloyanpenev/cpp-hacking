@@ -43,6 +43,8 @@ endif()
 # =============================================================================
 # Configure build type defaults and define CMake options
 include(cmake/Options.cmake)
+# Enable compiler cache (ccache/sccache) when available
+include(cmake/Cache.cmake)
 # Configure compiler warning flags and warnings-as-errors
 include(cmake/CompilerWarnings.cmake)
 # Configure sanitizer flags (ASan, LSan, TSan, UBSan, MSan)
@@ -51,6 +53,9 @@ include(cmake/Sanitizers.cmake)
 include(cmake/StaticAnalyzers.cmake)
 # Configure interprocedural optimization (LTO)
 include(cmake/InterproceduralOptimization.cmake)
+
+# Try to enable compiler cache early in configuration
+project_enable_cache()
 
 # =============================================================================
 # Main target
