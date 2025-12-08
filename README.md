@@ -12,7 +12,7 @@ Tooling includes:
 - CMake
 - GoogleTest
 - Emscripten (C++ to wasm compiler)
-- Vite (JavaScript Module Bundler)
+- Vite (web build tool)
 - Code Sanitizers (ASan, UBSan, MSan, LSan, TSan)
 - Clang-tidy
 - Cppcheck
