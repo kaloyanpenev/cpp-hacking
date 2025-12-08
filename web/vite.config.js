@@ -1,10 +1,15 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 
 // Read project config from central source
+// Try ../project.json first (when running from web/), then ../../project.json (when running from build-wasm/web/)
+let projectJsonPath = resolve(__dirname, '../project.json');
+if (!existsSync(projectJsonPath)) {
+    projectJsonPath = resolve(__dirname, '../../project.json');
+}
 const projectConfig = JSON.parse(
-    readFileSync(resolve(__dirname, '../project.json'), 'utf-8')
+    readFileSync(projectJsonPath, 'utf-8')
 );
 
 export default defineConfig({

@@ -40,7 +40,9 @@ ctest --test-dir build
 ```
 
 ## Build for WebAssembly
-Prereqs: Emscripten SDK installed and `emcmake`/`emmake` available (`source /path/to/emsdk_env.sh`).
+Prerequisites: 
+- Emscripten SDK installed and `emcmake`/`emmake` available (`source /path/to/emsdk_env.sh`)
+- Node.js 18.0.0 or higher (required for Vite 6)
 ```bash
 ./build-wasm.sh Release         # outputs to build-wasm/web/
 cd build-wasm/web

@@ -17,6 +17,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_TYPE="${1:-Release}"
 BUILD_DIR="$PROJECT_ROOT/build-wasm"
+THREADS="${NUMBER_OF_PROCESSORS:-$(command -v nproc >/dev/null 2>&1 && nproc || echo 4)}"
 
 # Check if emcmake is available
 if ! command -v emcmake &> /dev/null; then
@@ -47,8 +48,8 @@ emcmake cmake "$PROJECT_ROOT" \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     -DBUILD_TESTING=OFF
 
-# Build
-emmake make -j"$(nproc)"
+# Build (generator-agnostic; works on Windows/macOS/Linux)
+cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --parallel "$THREADS"
 
 echo ""
 echo "=== Build complete ==="
